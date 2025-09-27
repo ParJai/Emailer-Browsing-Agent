@@ -46,6 +46,25 @@ Return JSON: { "subject": "...", "body": "..." }
       obj = { subject: "Draft email", body: text };
     }
 
-    return obj;
+      const text = resp.choices[0]?.message?.content?.trim();
+
+      if (!text) {
+        return { subject: "Draft email", body: "Could not generate email content." };
+      }
+
+      // Try parsing JSON
+      let obj;
+      try {
+        obj = JSON.parse(text);
+      } catch {
+        // fallback if the model didn’t return JSON
+        obj = { subject: "Draft email", body: text };
+      }
+
+      return obj;
+    } catch (err) {
+      console.error("Error generating email:", err);
+      return { subject: "Draft email", body: "Failed to generate email content." };
+    }
   },
 });
