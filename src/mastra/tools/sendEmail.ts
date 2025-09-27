@@ -1,3 +1,4 @@
+// src/tools/sendEmail.ts
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import nodemailer from "nodemailer";
@@ -15,18 +16,21 @@ const transporter = nodemailer.createTransport({
 export const sendEmail = createTool({
   id: "sendEmail",
   description: "Send an email via SMTP",
-  input: z.object({
+  schema: z.object({
     recipientEmail: z.string().email(),
     subject: z.string(),
     body: z.string(),
   }),
-  executor: async ({ recipientEmail, subject, body }) => {
+  execute: async ({ input }) => {
+    const { recipientEmail, subject, body } = input;
+
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: recipientEmail,
       subject,
       html: body,
     });
+
     return { success: true };
   },
 });
