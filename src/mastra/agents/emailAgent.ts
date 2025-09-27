@@ -1,44 +1,78 @@
 // src/agents/emailAgent.ts
-import { Agent } from "@mastra/core/agent";
+import { MastraAgent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
-import { generateEmail } from "../tools/generateEmail";
 import { sendEmail } from "../tools/sendEmail";
 
-// Combined tool: generate + send email
-export async function generateAndSendEmail(input: string) {
-  console.log("🔹 generateAndSendEmail called with input:", input);
+// --- Mastra browsing agent ---
+const agent = new MastraAgent({ headless: true });
 
-  try {
-    // 1️⃣ Generate the email content
-    const emailContent = await generateEmail(input);
-    console.log("🔹 Email content generated:", emailContent);
+// --- Helper: extract MCPs ---
+async function extractMCPs(urls: string[]) {
+  const allMCPs: { title: string; price: string }[] = [];
 
-    // 2️⃣ Send the email
-    await sendEmail({
-      to: "recipient@example.com",      // replace with desired recipient
-      subject: emailContent.subject || "Automated Email",
-      text: emailContent.text,
-      html: emailContent.html,          // optional HTML content
-    });
+  for (const url of urls) {
+    try {
+      await agent.navigate(url);
+      await agent.waitForSelector("body");
 
-    console.log("✅ Email sent successfully!");
-    return "Email sent successfully!";
-  } catch (err) {
-    console.error("❌ Error generating or sending email:", err);
-    return "Failed to send email.";
+      const MCPs = await agent.evaluate(() => {
+        return Array.from(document.querySelectorAll(".item-card")).map((el) => ({
+          title: el.querySelector(".title")?.innerText || "",
+          price: el.querySelector(".price")?.innerText || "",
+        }));
+      });
+
+      allMCPs.push(...MCPs);
+
+      // Delay to avoid 429 throttling
+      await agent.sleep(Math.random() * 3000 + 2000);
+    } catch (err) {
+      console.error(`Error extracting MCPs from ${url}:`, err);
+    }
   }
+
+  return allMCPs;
 }
 
-// Agent definition
-export const emailAgent = new Agent({
-  name: "EmailAssistant",
-  instructions: `
-You can generate and send emails. 
-Use the generateAndSendEmail tool to perform both steps in a single action.
-`,
-  model: openai("gpt-4o-mini"),
-  tools: { generateAndSendEmail },   // only 1 tool now
-  maxSteps: 15,                      // increased to avoid tool-calls cutoff
-  maxTokens: 2000,                   // larger token limit for long emails
-  stream: false,                      // disable streaming for stability
-});
+// --- Helper: generate email content ---
+async function generateEmailContent(report: string) {
+  const prompt = `
+Write a professional email including the following report:
+
+${report}
+
+Keep it concise and clear.
+`;
+
+  const response = await openai("gpt-4o-mini").chat.completions.create({
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 500,
+  });
+
+  return response.choices[0].message.content || "";
+}
+
+// --- Main workflow ---
+export async function sendMCPReport(urls: string[]) {
+  const MCPs = await extractMCPs(urls);
+
+  if (MCPs.length === 0) {
+    console.log("No MCPs found. Skipping email.");
+    return;
+  }
+
+  const report = MCPs.map((item) => `${item.title}: ${item.price}`).join("\n");
+  const emailBody = await generateEmailContent(report);
+
+  await sendEmail({
+    to: "recipient@example.com", // replace with actual recipient
+    subject: "Daily MCP Report",
+    text: emailBody,
+  });
+
+  console.log("✅ MCP report email sent successfully!");
+}
+
+// --- Example usage ---
+// const urls = ["https://example.com/page1", "https://example.com/page2"];
+// sendMCPReport(urls);
