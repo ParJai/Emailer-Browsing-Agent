@@ -1,13 +1,17 @@
-// src/index.ts
-import "dotenv/config";
-import { emailAgent } from "./agents/emailAgent";
+import { Mastra } from '@mastra/core/mastra';
+import { LibSQLStore } from '@mastra/libsql';
+import { PinoLogger } from '@mastra/loggers';
+import { webAgent } from './agents/web-agent';
+import { emailAgent } from './agents/emailAgent';
 
-async function main() {
-  const result = await emailAgent.run(`
-    Send an email to Alice (alice@example.com) about our new product launch, tone: friendly.
-  `);
-
-  console.log("Agent result:", result);
-}
-
-main();
+export const mastra = new Mastra({
+  storage: new LibSQLStore({
+    // stores telemetry, evals, ... into memory storage, if it needs to persist, change to file:../mastra.db
+    url: ':memory:',
+  }),
+  agents: { webAgent, emailAgent },
+  logger: new PinoLogger({
+    name: 'Mastra',
+    level: 'info',
+  }),
+});
