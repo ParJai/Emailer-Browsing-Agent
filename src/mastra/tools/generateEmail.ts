@@ -17,20 +17,35 @@ export const generateEmail = createTool({
     const prompt = `
 Write an email to ${recipientEmail} about "${topic}".
 ${tone ? `Tone: ${tone}` : ""}
-Return JSON: { "subject": "...", "body": "..." }
-    `;
+Return a JSON object with "subject" and "body".
+`;
 
-    const model = openai("gpt-4o-mini"); // or "gpt-4-turbo" etc.
-    const resp = await model.generate({ prompt });
-
-    // parse JSON from LLM output
-    let obj;
     try {
-      obj = JSON.parse(resp.output_text);
-    } catch {
-      obj = { subject: "Draft email", body: resp.output_text };
-    }
+      const model = openai("gpt-4o-mini"); // or gpt-4-turbo
+      const resp = await model.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 500,
+      });
 
-    return obj;
+      const text = resp.choices[0]?.message?.content?.trim();
+
+      if (!text) {
+        return { subject: "Draft email", body: "Could not generate email content." };
+      }
+
+      // Try parsing JSON
+      let obj;
+      try {
+        obj = JSON.parse(text);
+      } catch {
+        // fallback if the model didn’t return JSON
+        obj = { subject: "Draft email", body: text };
+      }
+
+      return obj;
+    } catch (err) {
+      console.error("Error generating email:", err);
+      return { subject: "Draft email", body: "Failed to generate email content." };
+    }
   },
 });
