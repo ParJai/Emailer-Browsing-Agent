@@ -7,16 +7,15 @@ export const generateEmail = createTool({
   id: "generateEmail",
   description: "Generate an email subject & body given recipient, topic, tone.",
   schema: z.object({
-    recipientName: z.string(),
-    recipientEmail: z.string().email(),
+    recipientEmail: z.string(),
     topic: z.string(),
     tone: z.string().optional(),
   }),
   execute: async ({ input }) => {
-    const { recipientName, topic, tone } = input;
+    const { recipientEmail, topic, tone } = input;
 
     const prompt = `
-Write a professional email to ${recipientName} about "${topic}".
+Write an email to ${recipientEmail} about "${topic}".
 ${tone ? `Tone: ${tone}` : ""}
 Return JSON: { "subject": "...", "body": "..." }
     `;
