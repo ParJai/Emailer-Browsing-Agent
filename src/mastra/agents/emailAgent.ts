@@ -12,4 +12,7 @@ When asked to send an email, first call generateEmail, then call sendEmail with 
 `,
   model: openai("gpt-4o-mini"),
   tools: { generateEmail, sendEmail },
+  maxSteps: 5,
+  maxTokens: 1500,
+  stream: true,
 });
