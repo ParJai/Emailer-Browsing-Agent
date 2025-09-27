@@ -1,4 +1,4 @@
-// src/agents/emailAgent.ts
+// src/mastra/agents/emailAgent.ts
 import { MastraAgent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
 import { sendEmail } from "../tools/sendEmail";
@@ -6,7 +6,7 @@ import { sendEmail } from "../tools/sendEmail";
 // --- Mastra browsing agent ---
 const agent = new MastraAgent({ headless: true });
 
-// --- Helper: extract MCPs ---
+// --- Helper: extract MCPs from pages ---
 async function extractMCPs(urls: string[]) {
   const allMCPs: { title: string; price: string }[] = [];
 
@@ -52,7 +52,7 @@ Keep it concise and clear.
   return response.choices[0].message.content || "";
 }
 
-// --- Main workflow ---
+// --- Main workflow: extract MCPs and send email ---
 export async function sendMCPReport(urls: string[]) {
   const MCPs = await extractMCPs(urls);
 
@@ -73,6 +73,5 @@ export async function sendMCPReport(urls: string[]) {
   console.log("✅ MCP report email sent successfully!");
 }
 
-// --- Example usage ---
-// const urls = ["https://example.com/page1", "https://example.com/page2"];
-// sendMCPReport(urls);
+// --- Export for Mastra Cloud ---
+export const emailAgent = { sendMCPReport };
