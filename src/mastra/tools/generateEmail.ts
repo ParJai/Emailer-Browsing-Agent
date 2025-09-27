@@ -1,4 +1,3 @@
-// src/tools/generateEmail.ts
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { openai } from "@ai-sdk/openai";
@@ -7,28 +6,44 @@ export const generateEmail = createTool({
   id: "generateEmail",
   description: "Generate an email subject & body given recipient, topic, tone.",
   schema: z.object({
-    recipientEmail: z.string(),
+    recipientName: z.string(),
+    recipientEmail: z.string().email(),
     topic: z.string(),
     tone: z.string().optional(),
   }),
   execute: async ({ input }) => {
-    const { recipientEmail, topic, tone } = input;
+    const { recipientName, topic, tone } = input;
 
-    const prompt = `
-Write an email to ${recipientEmail} about "${topic}".
+    const userPrompt = `
+Write a professional email to ${recipientName} about "${topic}".
 ${tone ? `Tone: ${tone}` : ""}
 Return JSON: { "subject": "...", "body": "..." }
-    `;
+`;
 
-    const model = openai("gpt-4o-mini"); // or "gpt-4-turbo" etc.
-    const resp = await model.generate({ prompt });
+    const model = openai("gpt-4o-mini");
+    const resp = await model.doGenerate({
+      inputFormat: "messages",
+      mode: { type: "regular" },
+      prompt: [
+        {
+          role: "user",
+          content: [{ type: "text", text: userPrompt }],
+        },
+      ],
+    });
 
-    // parse JSON from LLM output
+    // console.log(resp)
+    const text = resp?.text ?? "";
+
+    if (!text) {
+      throw new Error("LLM returned empty response");
+    }
+
     let obj;
     try {
-      obj = JSON.parse(resp.output_text);
+      obj = JSON.parse(text);
     } catch {
-      obj = { subject: "Draft email", body: resp.output_text };
+      obj = { subject: "Draft email", body: text };
     }
 
     return obj;

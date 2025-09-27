@@ -23,6 +23,7 @@
     "@mastra/libsql": "latest",
     "@mastra/loggers": "latest",
     "@mastra/memory": "latest",
+    "nodemailer": "^7.0.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
