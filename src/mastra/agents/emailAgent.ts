@@ -4,23 +4,27 @@ import { openai } from "@ai-sdk/openai";
 import { generateEmail } from "../tools/generateEmail";
 import { sendEmail } from "../tools/sendEmail";
 
-// New combined tool
+// Combined tool: generate + send email
 export async function generateAndSendEmail(input: string) {
+  console.log("🔹 generateAndSendEmail called with input:", input);
+
   try {
     // 1️⃣ Generate the email content
     const emailContent = await generateEmail(input);
+    console.log("🔹 Email content generated:", emailContent);
 
     // 2️⃣ Send the email
     await sendEmail({
-      to: "recipient@example.com",   // replace with desired recipient
+      to: "recipient@example.com",      // replace with desired recipient
       subject: emailContent.subject || "Automated Email",
       text: emailContent.text,
-      html: emailContent.html,       // optional HTML content
+      html: emailContent.html,          // optional HTML content
     });
 
+    console.log("✅ Email sent successfully!");
     return "Email sent successfully!";
   } catch (err) {
-    console.error("Error generating or sending email:", err);
+    console.error("❌ Error generating or sending email:", err);
     return "Failed to send email.";
   }
 }
@@ -30,11 +34,11 @@ export const emailAgent = new Agent({
   name: "EmailAssistant",
   instructions: `
 You can generate and send emails. 
-When asked, use the generateAndSendEmail tool to perform both steps in one action.
+Use the generateAndSendEmail tool to perform both steps in a single action.
 `,
   model: openai("gpt-4o-mini"),
   tools: { generateAndSendEmail },   // only 1 tool now
-  maxSteps: 3,                       // enough for planning + single tool call
-  maxTokens: 1500,
-  stream: true,
+  maxSteps: 15,                      // increased to avoid tool-calls cutoff
+  maxTokens: 2000,                   // larger token limit for long emails
+  stream: false,                      // disable streaming for stability
 });
