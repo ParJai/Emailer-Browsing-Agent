@@ -29,7 +29,7 @@ export const parseEmailInput = createTool({
 
 Return as valid JSON with keys:
 - recipientName (string, guess if not given)
-- recipientEmail (string, guess fake if not provided)
+- recipientEmail (string, guess best possible gmail address if not provided)
 - senderName (string, guess if not given)
 - topic (string)
 - tone (string, e.g. friendly, formal, concise)`,

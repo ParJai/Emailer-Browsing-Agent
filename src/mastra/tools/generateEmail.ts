@@ -46,7 +46,12 @@ Return JSON: { "subject": "...", "body": "..." }
     }
 
     console.log(resp.text)
-    text = JSON.parse(resp.text?.substring(8, resp.text?.length-3));
+    // text = JSON.parse(resp.text?.substring(8, resp.text?.length-3));
+    try {
+      text = JSON.parse(resp.text)
+    } catch {
+      text = JSON.parse(resp.text?.substring(8, resp.text?.length-3));
+    }
 
     if (!text) {
       return { sender: "Sender", subject: "Draft email", body: "Could not generate email content." };
