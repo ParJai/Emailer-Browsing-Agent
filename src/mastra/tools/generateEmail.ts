@@ -12,10 +12,10 @@ export const generateEmail = createTool({
     tone: z.string().optional(),
   }),
   execute: async ({ input }) => {
-    const { recipientName, topic, tone } = input;
+    const { senderName, recipientName, topic, tone } = input;
 
     const userPrompt = `
-Write a professional email to ${recipientName} about "${topic}".
+Write a professional email to ${recipientName} from ${senderName} about "${topic}".
 ${tone ? `Tone: ${tone}` : ""}
 Return JSON: { "subject": "...", "body": "..." }
 `;
@@ -33,38 +33,38 @@ Return JSON: { "subject": "...", "body": "..." }
     });
 
     // console.log(resp)
-    const text = resp?.text ?? "";
+    let text = resp?.text ?? "";
 
     if (!text) {
       throw new Error("LLM returned empty response");
     }
 
+    try {
+      let obj = JSON.parse(text);
+    } catch {
+      let obj = { subject: "Draft email", body: text };
+    }
+
+    console.log(resp.text)
+    text = JSON.parse(resp.text?.substring(8, resp.text?.length-3));
+
+    if (!text) {
+      return { sender: "Sender", subject: "Draft email", body: "Could not generate email content." };
+    }
+
+    // Try parsing JSON
     let obj;
     try {
       obj = JSON.parse(text);
     } catch {
-      obj = { subject: "Draft email", body: text };
+      // fallback if the model didn’t return JSON
+      obj = { sender: text.senderName, subject: text.subject, body: text.body };
     }
 
-      const text = resp.choices[0]?.message?.content?.trim();
-
-      if (!text) {
-        return { subject: "Draft email", body: "Could not generate email content." };
-      }
-
-      // Try parsing JSON
-      let obj;
-      try {
-        obj = JSON.parse(text);
-      } catch {
-        // fallback if the model didn’t return JSON
-        obj = { subject: "Draft email", body: text };
-      }
-
-      return obj;
-    } catch (err) {
-      console.error("Error generating email:", err);
-      return { subject: "Draft email", body: "Failed to generate email content." };
-    }
-  },
-});
+    return obj;
+  }, catch(err) {
+    console.error("Error generating email:", err);
+    return { sender: text.senderName, subject: "Draft email", body: "Failed to generate email content." };
+  }
+},
+);

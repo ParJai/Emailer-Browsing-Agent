@@ -22,11 +22,12 @@ export const sendEmail = createTool({
     body: z.string(),
   }),
   execute: async ({ input }) => {
-    const { recipientEmail, subject, body } = input;
+    const { recipientEmail, senderName, subject, body } = input;
 
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: recipientEmail,
+      sender: senderName,
       subject,
       html: body,
     });
