@@ -23,7 +23,9 @@
     "@mastra/libsql": "latest",
     "@mastra/loggers": "latest",
     "@mastra/memory": "latest",
+    "node-notifier": "^10.0.1",
     "nodemailer": "^7.0.6",
+    "notification": "^0.0.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
